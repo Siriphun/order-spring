@@ -35,7 +35,7 @@ pipeline {
         }
         stage('Build Maven') {
             steps {
-                checkout([$class: 'GitSCM', credentialsId: 'githubpwd', branches: [[name: '*/main']], extensions: [], userRemoteConfigs: [[url: 'https://github.com/maxca/spring-java-jenkins.git']]])
+                checkout([$class: 'GitSCM', credentialsId: 'githubpwd', branches: [[name: '*/main']], extensions: [], userRemoteConfigs: [[url: 'https://github.com/Siriphun/order-spring.git']]])
                 sh 'mvn clean install'
             }
         }
