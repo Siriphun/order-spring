@@ -17,7 +17,7 @@ spec:
     spec:
       containers:
         - name: orders
-          image: maxca789/orders:$IMAGE_TAG
+          image: Siriphun/orders:$IMAGE_TAG
           ports:
             - containerPort: 8082
           resources:
