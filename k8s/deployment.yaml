@@ -19,7 +19,7 @@ spec:
         - name: orders
           image: Siriphun/orders:$IMAGE_TAG
           ports:
-            - containerPort: 8082
+            - containerPort: 8083
           resources:
             requests:
               memory: "128Mi"
