@@ -66,15 +66,17 @@ pipeline {
                         // Check for dangling images and remove them if any are found
                         def danglingImages = sh(script: "${DOCKER_HOME} images -f 'dangling=true' -q", returnStdout: true).trim()
                         if (danglingImages) {
-                            // Stop and remove any container using the image before deletion
+                            // Stop and remove any container using the dangling images
                             sh '''
-                                container_id=$(${DOCKER_HOME} ps -q --filter ancestor=${danglingImages})
-                                if [ ! -z "$container_id" ]; then
-                                    ${DOCKER_HOME} stop $container_id
-                                    ${DOCKER_HOME} rm $container_id
-                                fi
+                                for img in ${danglingImages}; do
+                                    container_id=$(${DOCKER_HOME} ps -q --filter ancestor=$img)
+                                    if [ ! -z "$container_id" ]; then
+                                        ${DOCKER_HOME} stop $container_id
+                                        ${DOCKER_HOME} rm $container_id
+                                    fi
+                                    ${DOCKER_HOME} rmi -f $img
+                                done
                             '''
-                            sh "${DOCKER_HOME} rmi -f ${danglingImages}"
                         } else {
                             echo 'No dangling images to remove.'
                         }
