@@ -50,7 +50,6 @@ pipeline {
             steps {
                 script {
                     sh '${DOCKER_HOME} pull openjdk:23-rc-jdk-slim'
-                    // sh 'curl -vvv https://auth.docker.io/token'
                     sh '${DOCKER_HOME} network prune --force'
                     sh '${DOCKER_HOME} build -t ${IMAGE_NAME}:${IMAGE_TAG} .'
                 }
@@ -67,6 +66,14 @@ pipeline {
                         // Check for dangling images and remove them if any are found
                         def danglingImages = sh(script: "${DOCKER_HOME} images -f 'dangling=true' -q", returnStdout: true).trim()
                         if (danglingImages) {
+                            // Stop and remove any container using the image before deletion
+                            sh '''
+                                container_id=$(${DOCKER_HOME} ps -q --filter ancestor=${danglingImages})
+                                if [ ! -z "$container_id" ]; then
+                                    ${DOCKER_HOME} stop $container_id
+                                    ${DOCKER_HOME} rm $container_id
+                                fi
+                            '''
                             sh "${DOCKER_HOME} rmi -f ${danglingImages}"
                         } else {
                             echo 'No dangling images to remove.'
