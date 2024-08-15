@@ -77,7 +77,7 @@ pipeline {
         }
         stage('Deploy to k8s') {
             steps {
-                withKubeConfig([credentialsId: 'kubectlpwd', serverUrl: 'https://127.0.0.1:51092']) {
+                withKubeConfig([credentialsId: 'kubectlpwd', serverUrl: 'https://127.0.0.1:53582']) {
                     script {
                         // Replace the image tag in the deployment YAML file
                         sh "sed -i '' 's/\$IMAGE_TAG/$IMAGE_TAG/g' k8s/deployment.yaml"
