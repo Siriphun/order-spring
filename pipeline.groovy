@@ -4,15 +4,14 @@ pipeline {
         maven 'maven_3_9'
     }
     environment {
-        // Define variables for Docker paths and timeouts
         DOCKER_HOME = '/usr/local/bin/docker'
         DOCKER_CLIENT_TIMEOUT = '1000'
         COMPOSE_HTTP_TIMEOUT = '1000'
         KUBECTL_HOME = '/opt/homebrew/bin/kubectl'
         BUILD_DATE = new Date().format('yyyy-MM-dd')
         IMAGE_TAG = "${BUILD_DATE}-${BUILD_NUMBER}"
-        IMAGE_NAME = 'orders' // Variable for the image name
-        DOCKER_USERNAME = 'palmsiriphun' // Variable for Docker Hub username
+        IMAGE_NAME = 'orders'
+        DOCKER_USERNAME = 'palmsiriphun'
         K8S_NAMESPACE = 'minikube-local'
     }
     stages {
@@ -59,14 +58,17 @@ pipeline {
             steps {
                 script {
                     withCredentials([usernamePassword(credentialsId: 'dockerpwd', usernameVariable: 'DOCKER_USERNAME', passwordVariable: 'DOCKER_PASSWORD')]) {
-                        sh '${DOCKER_HOME} login -u ${DOCKER_USERNAME} -p ${DOCKER_PASSWORD}'
+                        sh '''
+                            mkdir -p $HOME/.docker
+                            echo '{}' > $HOME/.docker/config.json
+                            echo "$DOCKER_PASSWORD" | ${DOCKER_HOME} login -u "$DOCKER_USERNAME" --password-stdin
+                        '''
                         sh '${DOCKER_HOME} tag ${IMAGE_NAME}:${IMAGE_TAG} ${DOCKER_USERNAME}/${IMAGE_NAME}:${IMAGE_TAG}'
                         sh '${DOCKER_HOME} push ${DOCKER_USERNAME}/${IMAGE_NAME}:${IMAGE_TAG}'
 
                         // Check for dangling images and remove them if any are found
                         def danglingImages = sh(script: "${DOCKER_HOME} images -f 'dangling=true' -q", returnStdout: true).trim()
                         if (danglingImages) {
-                            // Stop and remove any container using the dangling images
                             sh '''
                                 for img in ${danglingImages}; do
                                     container_id=$(${DOCKER_HOME} ps -q --filter ancestor=$img)
@@ -89,7 +91,7 @@ pipeline {
                 withKubeConfig([credentialsId: 'kubectlpwd', serverUrl: 'https://127.0.0.1:61294']) {
                     script {
                         // Replace the image tag in the deployment YAML file
-                        sh "sed -i '' 's/\$IMAGE_TAG/$IMAGE_TAG/g' k8s/deployment.yaml"
+                        sh "sed -i '' 's/\\\$IMAGE_TAG/${IMAGE_TAG}/g' k8s/deployment.yaml"
                         sh 'cat k8s/deployment.yaml'
                     }
                     sh '${KUBECTL_HOME} get pods -n ${K8S_NAMESPACE}'
